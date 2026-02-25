@@ -13,7 +13,7 @@ class SerialCmdBridge(Node):
         super().__init__('serial_cmd_bridge')
         
         # Parameters
-        self.declare_parameter('serial_port', '/dev/ttyACM1')
+        self.declare_parameter('serial_port', '/dev/ttyACM0')
         self.declare_parameter('baud_rate', 115200)
         self.declare_parameter('wheel_base', 0.56)
         self.declare_parameter('estop_button', 4)
