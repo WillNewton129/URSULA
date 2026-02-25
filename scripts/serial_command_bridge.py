@@ -17,7 +17,7 @@ class SerialCmdBridge(Node):
         self.declare_parameter('baud_rate', 115200)
         self.declare_parameter('wheel_base', 0.56)  # 560mm width
         self.declare_parameter('estop_button', 4)   # LB button (button 4)
-        self.declare_parameter('turn_multiplier', 6.0)  # Amplify turning for skid-steer
+        self.declare_parameter('turn_multiplier', 4.5)  # Amplify turning for skid-steer
         
         serial_port = self.get_parameter('serial_port').value
         baud_rate = self.get_parameter('baud_rate').value
