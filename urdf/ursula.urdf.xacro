@@ -3,6 +3,7 @@
 
   <xacro:include filename="lidar.xacro"/>
   <xacro:include filename="oak_d.xacro"/>
+  <xacro:include filename="gazebo_plugins.xacro"/>  <!-- ADD THIS LINE -->
 
   <xacro:property name="chassis_length"     value="0.480"/>
   <xacro:property name="chassis_width"      value="0.560"/>
@@ -231,5 +232,8 @@
   <xacro:luxonis_oak_d parent="chassis_link">
     <origin xyz="${chassis_length / 2.0 + 0.001} 0 ${0.1005 - chassis_height / 2.0}" rpy="0 0 0"/>
   </xacro:luxonis_oak_d>
+
+  <!-- Instantiate all Gazebo plugins -->
+  <xacro:ursula_gazebo/>
 
 </robot>

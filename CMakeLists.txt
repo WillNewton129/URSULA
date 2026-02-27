@@ -5,7 +5,6 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
-# Find dependencies
 find_package(ament_cmake REQUIRED)
 
 # Install Python scripts
@@ -14,26 +13,12 @@ install(PROGRAMS
   DESTINATION lib/${PROJECT_NAME}
 )
 
-# Install config files
+# Install all resource directories
 install(DIRECTORY
   config
-  DESTINATION share/${PROJECT_NAME}
-)
-
-# Install URDF files
-install(DIRECTORY
-  urdf
-  DESTINATION share/${PROJECT_NAME}
-)
-
-# Install launch files (we'll add these later)
-install(DIRECTORY
   launch
-  DESTINATION share/${PROJECT_NAME}
-)
-
-# Install RViz files
-install(DIRECTORY
+  urdf
+  worlds
   rviz
   DESTINATION share/${PROJECT_NAME}
 )

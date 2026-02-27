@@ -3,25 +3,43 @@
 <package format="3">
   <name>ursula</name>
   <version>0.1.0</version>
-  <description>ursula autonomous robot package</description>
+  <description>URSULA autonomous UGV - UoL Capstone Project</description>
   <maintainer email="your.email@example.com">Your Name</maintainer>
   <license>MIT</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
-  
+
+  <!-- Core ROS -->
   <depend>rclpy</depend>
   <depend>geometry_msgs</depend>
   <depend>sensor_msgs</depend>
   <depend>std_msgs</depend>
+  <depend>nav_msgs</depend>
+
+  <!-- Robot description & state -->
   <depend>robot_state_publisher</depend>
+  <depend>joint_state_publisher</depend>
+  <depend>xacro</depend>
+
+  <!-- Teleop -->
   <depend>teleop_twist_joy</depend>
+  <depend>teleop_twist_keyboard</depend>
   <depend>joy</depend>
+
+  <!-- Simulation -->
+  <depend>gazebo_ros</depend>
+  <depend>gazebo_ros_pkgs</depend>
+  <depend>gazebo_plugins</depend>
+
+  <!-- SLAM & Navigation -->
   <depend>slam_toolbox</depend>
   <depend>nav2_bringup</depend>
   <depend>nav2_msgs</depend>
-  <depend>xacro</depend>
-  <depend>rf2o_laser_odometry</depend>
+  <depend>nav2_costmap_2d</depend>
+
+  <!-- Sensors (real hardware) -->
   <depend>rplidar_ros</depend>
+  <depend>rf2o_laser_odometry</depend>
 
   <export>
     <build_type>ament_cmake</build_type>
