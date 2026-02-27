@@ -2,14 +2,15 @@
 """Launch serial bridge, lidar, and odometry on Jetson."""
 
 import os
+import xacro
 from launch import LaunchDescription
 from launch_ros.actions import Node
+from ament_index_python.packages import get_package_share_directory
 
 def generate_launch_description():
-    ursula_share = os.path.join(
-        os.environ.get('AMENT_PREFIX_PATH').split(':')[0],
-        'share', 'ursula'
-    )
+    ursula_share = get_package_share_directory('ursula')
+    urdf_file = os.path.join(ursula_share, 'urdf', 'ursula.urdf.xacro')
+    robot_description = xacro.process_file(urdf_file).toxml()
 
     return LaunchDescription([
         # Serial bridge to Arduino
@@ -37,5 +38,13 @@ def generate_launch_description():
             name='rf2o_laser_odometry_node',
             output='screen',
             parameters=[{'scan_topic': '/scan', 'odom_frame': 'odom', 'base_frame': 'base_link'}]
+        ),
+        # Robot state publisher - publish TF Tree
+        Node(
+            package='robot_state_publisher',
+            executable='robot_state_publisher',
+            name='robot_state_publisher',
+            output='screen',
+            parameters=[{'robot_description': robot_description}]
         ),
     ])

@@ -16,6 +16,12 @@
   <depend>robot_state_publisher</depend>
   <depend>teleop_twist_joy</depend>
   <depend>joy</depend>
+  <depend>slam_toolbox</depend>
+  <depend>nav2_bringup</depend>
+  <depend>nav2_msgs</depend>
+  <depend>xacro</depend>
+  <depend>rf2o_laser_odometry</depend>
+  <depend>rplidar_ros</depend>
 
   <export>
     <build_type>ament_cmake</build_type>
