@@ -1,0 +1,24 @@
+twist_mux:
+  ros__parameters:
+    topics:
+      # Highest priority — joystick teleop (human override)
+      joystick:
+        topic: /cmd_vel_joy
+        timeout: 0.5
+        priority: 100
+
+      # Second — keyboard teleop (dev/testing use)
+      keyboard:
+        topic: /cmd_vel_keyboard
+        timeout: 0.5
+        priority: 50
+
+      # Lowest — Nav2 autonomous navigation
+      navigation:
+        topic: /cmd_vel_nav
+        timeout: 0.5
+        priority: 10
+
+    # twist_mux publishes the winning source here
+    # This is what the robot/Gazebo plugin actually listens to
+    output_topic: /cmd_vel

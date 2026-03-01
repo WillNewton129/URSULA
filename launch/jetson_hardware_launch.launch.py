@@ -47,4 +47,12 @@ def generate_launch_description():
             output='screen',
             parameters=[{'robot_description': robot_description}]
         ),
+        # twist_mux to combine cmd_vel from teleop and Nav2
+        Node(
+            package='twist_mux',
+            executable='twist_mux',
+            name='twist_mux',
+            parameters=[os.path.join(ursula_share, 'config', 'twist_mux.yaml')],
+            remappings=[('/cmd_vel_out', '/cmd_vel')]
+        ),
     ])

@@ -25,6 +25,7 @@
   <depend>teleop_twist_joy</depend>
   <depend>teleop_twist_keyboard</depend>
   <depend>joy</depend>
+  <depend>twist_mux</depend>
 
   <!-- Simulation -->
   <depend>gazebo_ros</depend>

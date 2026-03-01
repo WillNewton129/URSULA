@@ -14,13 +14,15 @@ def generate_launch_description():
             package='joy',
             executable='joy_node',
             name='joy_node',
-            output='screen'
+            output='screen',
+            parameters=[{'device_id': 0}]  # or 1 if PS4 is second
         ),
         Node(
             package='teleop_twist_joy',
             executable='teleop_node',
             name='teleop_twist_joy_node',
             output='screen',
+            remappings=[('/cmd_vel', '/cmd_vel_joy')],
             parameters=[os.path.join(ursula_share, 'config', 'controller_teleop.yaml')]
         ),
     ])
