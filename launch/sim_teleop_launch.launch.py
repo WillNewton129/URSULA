@@ -38,27 +38,27 @@ def generate_launch_description():
 
     teleop_type_arg = DeclareLaunchArgument(
         'teleop',
-        default_value='keyboard',
+        default_value='joystick',
         description='Teleop type: keyboard or joystick'
     )
     teleop_type = LaunchConfiguration('teleop')
 
     # Keyboard teleop
-    keyboard_teleop = Node(
-        condition=IfCondition(
-            # Hack: LaunchConfiguration doesn't support == directly,
-            # but teleop_twist_keyboard is always fine to run — the arg is just a hint.
-            # See note below about running this manually if needed.
-            teleop_type
-        ),
-        package='teleop_twist_keyboard',
-        executable='teleop_twist_keyboard',
-        name='teleop_twist_keyboard',
-        output='screen',
-        prefix='xterm -e',   # Opens in its own terminal window so stdin works
-        parameters=[{'use_sim_time': True}],
-        remappings=[('/cmd_vel', '/cmd_vel')]
-    )
+    # keyboard_teleop = Node(
+    #     condition=IfCondition(
+    #         # Hack: LaunchConfiguration doesn't support == directly,
+    #         # but teleop_twist_keyboard is always fine to run — the arg is just a hint.
+    #         # See note below about running this manually if needed.
+    #         teleop_type
+    #     ),
+    #     package='teleop_twist_keyboard',
+    #     executable='teleop_twist_keyboard',
+    #     name='teleop_twist_keyboard',
+    #     output='screen',
+    #     prefix='xterm -e',   # Opens in its own terminal window so stdin works
+    #     parameters=[{'use_sim_time': True}],
+    #     remappings=[('/cmd_vel', '/cmd_vel')]
+    # )
 
     # Joystick nodes
     joy_node = Node(
@@ -81,7 +81,7 @@ def generate_launch_description():
 
     return LaunchDescription([
         teleop_type_arg,
-        keyboard_teleop,
+        #keyboard_teleop,
         joy_node,
         joystick_teleop,
     ])
