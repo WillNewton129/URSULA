@@ -99,6 +99,42 @@ def generate_launch_description():
     #     name='joint_state_publisher',
     #     parameters=[{'use_sim_time': True}]
     # )
+    # Static transforms for front wheels (not controlled by diff drive plugin)
+    front_left_wheel_tf = Node(
+        package='tf2_ros',
+        executable='static_transform_publisher',
+        name='front_left_wheel_tf',
+        arguments=['0', '0', '0', '0', '0', '0',
+                'chassis_link', 'front_left_wheel_link'],
+        parameters=[{'use_sim_time': True}]
+    )
+
+    front_right_wheel_tf = Node(
+        package='tf2_ros',
+        executable='static_transform_publisher',
+        name='front_right_wheel_tf',
+        arguments=['0', '0', '0', '0', '0', '0',
+                'chassis_link', 'front_right_wheel_link'],
+        parameters=[{'use_sim_time': True}]
+    )
+
+    front_left_susp_tf = Node(
+    package='tf2_ros',
+    executable='static_transform_publisher',
+    name='front_left_susp_tf',
+    arguments=['0', '0', '0', '0', '0', '0',
+               'chassis_link', 'front_left_susp_rod_link'],
+    parameters=[{'use_sim_time': True}]
+    )
+
+    front_right_susp_tf = Node(
+        package='tf2_ros',
+        executable='static_transform_publisher',
+        name='front_right_susp_tf',
+        arguments=['0', '0', '0', '0', '0', '0',
+                'chassis_link', 'front_right_susp_rod_link'],
+        parameters=[{'use_sim_time': True}]
+    )
 
     # ------------------------------------------------------------------ #
     # Spawn robot in Gazebo                                                #
@@ -161,6 +197,10 @@ def generate_launch_description():
         gazebo,
         robot_state_publisher,
         #joint_state_publisher,
+        front_left_wheel_tf,
+        front_right_wheel_tf,
+        front_left_susp_tf,
+        front_right_susp_tf,
         spawn_entity,
         slam_toolbox,
         rviz,

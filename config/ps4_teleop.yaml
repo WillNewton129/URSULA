@@ -36,7 +36,7 @@ teleop_twist_joy_node:
     
     # Angular scaling
     scale_angular:
-      yaw: 0.80   # rotation speed
+      yaw: 02.0   # rotation speed
       pitch: 0.0
       roll: 0.0
     
