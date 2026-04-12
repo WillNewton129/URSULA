@@ -32,6 +32,10 @@ from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 from ament_index_python.packages import get_package_share_directory
 
+from launch.actions import DeclareLaunchArgument
+from launch.conditions import IfCondition
+from launch.substitutions import LaunchConfiguration
+
 
 def generate_launch_description():
     ursula_share = get_package_share_directory('ursula')
@@ -144,6 +148,29 @@ def generate_launch_description():
     )
 
     # ----------------------------------------------------------------
+    # Foxglove bridge
+    # optional, enable with foxglove:=true to stream data to Foxglove Studio for visualisation and debugging
+    # ----------------------------------------------------------------
+
+    foxglove_arg = DeclareLaunchArgument('foxglove', default_value='true')
+    use_foxglove = LaunchConfiguration('foxglove')
+
+    foxglove_bridge = Node(
+        condition=IfCondition(use_foxglove),
+        package='foxglove_bridge',
+        executable='foxglove_bridge',
+        name='foxglove_bridge',
+        output='screen',
+        parameters=[{
+            'port': 8765,
+            'address': '0.0.0.0',
+            'topic_whitelist': ['.*'],
+            'send_buffer_limit': 10000000,
+            'use_sim_time': False,
+            'max_qos_depth': 5,
+        }]
+    )
+    # ----------------------------------------------------------------
     # SLAM Toolbox
     # Generates map->odom transform and builds occupancy map
     # ----------------------------------------------------------------
@@ -187,5 +214,7 @@ def generate_launch_description():
         rf2o,
         twist_mux,
         slam_toolbox,
+        foxglove_arg,
+        foxglove_bridge,
         nav2,
     ])
