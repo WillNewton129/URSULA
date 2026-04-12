@@ -34,6 +34,8 @@ from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
 from ament_index_python.packages import get_package_share_directory
+from launch.actions import DeclareLaunchArgument
+from launch.conditions import IfCondition
 import xacro
 
 
@@ -55,6 +57,10 @@ def generate_launch_description():
     x_spawn   = LaunchConfiguration('x_spawn')
     y_spawn   = LaunchConfiguration('y_spawn')
     yaw_spawn = LaunchConfiguration('yaw_spawn')
+
+    use_foxglove_arg = DeclareLaunchArgument('foxglove', default_value='true')
+    use_foxglove = LaunchConfiguration('foxglove')
+
 
     # ------------------------------------------------------------------ #
     # Process URDF / xacro                                                #
@@ -174,6 +180,26 @@ def generate_launch_description():
             {'use_sim_time': True}
         ]
     )
+    # ------------------------------------------------------------------ #
+    # Foxglove                                                           #
+    # ------------------------------------------------------------------ #
+    foxglove_bridge = Node(
+    condition=IfCondition(use_foxglove),
+    package='foxglove_bridge',
+    executable='foxglove_bridge',
+    name='foxglove_bridge',
+    output='screen',
+    parameters=[{
+        'port': 8765,
+        'address': '0.0.0.0',  # Listen on all interfaces
+        'tls': False,
+        'certfile': '',
+        'keyfile': '',
+        'topic_whitelist': ['.*'],  # Allow all topics
+        'send_buffer_limit': 10000000,
+        'use_sim_time': True,
+    }]
+)
 
     # ------------------------------------------------------------------ #
     # RViz2                                                                #
@@ -203,5 +229,7 @@ def generate_launch_description():
         front_right_susp_tf,
         spawn_entity,
         slam_toolbox,
+        use_foxglove_arg,
+        foxglove_bridge,
         rviz,
     ])
