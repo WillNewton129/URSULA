@@ -24,7 +24,7 @@ teleop_twist_joy_node:
     
     # Turbo disabled (set to same as normal)
     scale_linear_turbo:
-      x: 0.50
+      x: 0.050
       y: 0.0
       z: 0.0
     
