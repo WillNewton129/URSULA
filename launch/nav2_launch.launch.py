@@ -3,14 +3,20 @@
 nav2_launch.launch.py
 Launch the Nav2 autonomous navigation stack for URSULA.
 
-In Humble, nav2_recoveries was renamed nav2_behaviors.
-Run AFTER gazebo_sim_launch.launch.py (or jetson_hardware_launch + slam_launch).
+In ROS 2 Humble, nav2_controller does NOT have a 'cmd_vel_topic' parameter —
+that parameter was added in later distributions and is silently ignored here.
+The correct way to redirect Nav2 velocity output is a node-level remapping on
+the controller_server node, which is what this file does:
+
+    controller_server: /cmd_vel  →  /cmd_vel_nav
+
+twist_mux.yaml subscribes to /cmd_vel_nav at priority 10 (lowest), so the
+joystick (priority 100) always overrides autonomous navigation.
 
 Usage (sim):
-  ros2 launch ursula nav2_launch.launch.py
   ros2 launch ursula nav2_launch.launch.py use_sim_time:=true
 
-Usage (real robot, run on Jetson):
+Usage (real robot, called from jetson_hardware_launch.launch.py):
   ros2 launch ursula nav2_launch.launch.py use_sim_time:=false
 """
 
@@ -24,7 +30,7 @@ from ament_index_python.packages import get_package_share_directory
 
 def generate_launch_description():
     ursula_share = get_package_share_directory('ursula')
-    nav2_params = os.path.join(ursula_share, 'config', 'nav2_params.yaml')
+    nav2_params  = os.path.join(ursula_share, 'config', 'nav2_params.yaml')
 
     use_sim_time_arg = DeclareLaunchArgument(
         'use_sim_time',
@@ -36,10 +42,10 @@ def generate_launch_description():
     return LaunchDescription([
         use_sim_time_arg,
 
-        # ── Controller server ─────────────────────────────────────────────
-        # Remapped to /cmd_vel_nav so twist_mux picks it up at priority 10
-        # rather than publishing directly to /cmd_vel (which would bypass
-        # the joystick override)
+        # ── Controller server ──────────────────────────────────────────────
+        # IMPORTANT: remappings=[('/cmd_vel', '/cmd_vel_nav')] is the ONLY
+        # reliable way to redirect nav2 output in Humble.  The YAML parameter
+        # 'cmd_vel_topic' does not exist in this distribution.
         Node(
             package='nav2_controller',
             executable='controller_server',
@@ -49,7 +55,7 @@ def generate_launch_description():
             parameters=[nav2_params, {'use_sim_time': use_sim_time}]
         ),
 
-        # ── Planner server ────────────────────────────────────────────────
+        # ── Planner server ─────────────────────────────────────────────────
         Node(
             package='nav2_planner',
             executable='planner_server',
@@ -58,7 +64,7 @@ def generate_launch_description():
             parameters=[nav2_params, {'use_sim_time': use_sim_time}]
         ),
 
-        # ── Behavior server (was nav2_recoveries in Foxy/Galactic) ────────
+        # ── Behavior server (renamed from nav2_recoveries in Foxy) ─────────
         Node(
             package='nav2_behaviors',
             executable='behavior_server',
@@ -67,7 +73,7 @@ def generate_launch_description():
             parameters=[nav2_params, {'use_sim_time': use_sim_time}]
         ),
 
-        # ── BT Navigator ──────────────────────────────────────────────────
+        # ── BT Navigator ───────────────────────────────────────────────────
         Node(
             package='nav2_bt_navigator',
             executable='bt_navigator',
@@ -76,8 +82,7 @@ def generate_launch_description():
             parameters=[nav2_params, {'use_sim_time': use_sim_time}]
         ),
 
-        # ── Lifecycle manager ─────────────────────────────────────────────
-        # Manages startup/shutdown order for all Nav2 nodes.
+        # ── Lifecycle manager ──────────────────────────────────────────────
         Node(
             package='nav2_lifecycle_manager',
             executable='lifecycle_manager',

@@ -4,18 +4,24 @@ jetson_hardware_launch.launch.py
 
 Full onboard stack for URSULA running on the Jetson.
 Runs: RPLidar + robot_state_publisher + joint_state_publisher + rf2o
-      + serial bridge + twist_mux + slam_toolbox + Nav2
+      + serial bridge + twist_mux + slam_toolbox + Nav2 + foxglove-bridge
 
 Usage (from dev laptop over SSH):
   ssh uoljetson@<jetson-ip>
   ros2 launch ursula jetson_hardware_launch.launch.py
 
 Optional args:
-  ros2 launch ursula jetson_hardware_launch.launch.py slam:=false
-    (disable SLAM if running in localisation mode with a saved map)
+  ros2 launch ursula jetson_hardware_launch.launch.py slam_mode:=mapping
+    (default - build a new map from scratch)
+
+  ros2 launch ursula jetson_hardware_launch.launch.py slam_mode:=localization
+    (use a previously saved map - requires /home/uoljetson/maps/ursula_map.yaml)
 
   ros2 launch ursula jetson_hardware_launch.launch.py nav2:=false
     (disable Nav2 if you only want to drive manually)
+
+  ros2 launch ursula jetson_hardware_launch.launch.py foxglove:=false
+    (disable foxglove-bridge if not needed)
 """
 
 import os
@@ -26,17 +32,11 @@ from launch.actions import (
     IncludeLaunchDescription,
     TimerAction,
 )
-from launch.conditions import IfCondition
+from launch.conditions import IfCondition, LaunchConfigurationEquals
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 from ament_index_python.packages import get_package_share_directory
-
-from launch.actions import DeclareLaunchArgument
-from launch.conditions import IfCondition
-from launch.substitutions import LaunchConfiguration
-
-from launch.conditions import LaunchConfigurationEquals
 
 
 def generate_launch_description():
@@ -47,19 +47,29 @@ def generate_launch_description():
     # ----------------------------------------------------------------
     # Launch arguments
     # ----------------------------------------------------------------
-    slam_arg = DeclareLaunchArgument(
-        'slam',
-        default_value='true',
-        description='Run slam_toolbox for mapping. Set false for localisation with saved map.'
+    slam_mode_arg = DeclareLaunchArgument(
+        'slam_mode',
+        default_value='mapping',
+        description=(
+            'SLAM mode: "mapping" starts a new map from scratch, '
+            '"localization" loads an existing map from '
+            '/home/uoljetson/maps/ursula_map'
+        )
     )
     nav2_arg = DeclareLaunchArgument(
         'nav2',
         default_value='true',
         description='Launch Nav2 autonomous navigation stack.'
     )
+    foxglove_arg = DeclareLaunchArgument(
+        'foxglove',
+        default_value='true',
+        description='Start foxglove-bridge WebSocket server on port 8765.'
+    )
 
-    use_slam = LaunchConfiguration('slam')
-    use_nav2 = LaunchConfiguration('nav2')
+    slam_mode  = LaunchConfiguration('slam_mode')
+    use_nav2   = LaunchConfiguration('nav2')
+    use_foxglove = LaunchConfiguration('foxglove')
 
     # ----------------------------------------------------------------
     # RPLidar A3
@@ -70,15 +80,15 @@ def generate_launch_description():
         name='rplidar_composition',
         output='screen',
         parameters=[{
-            'serial_port': '/dev/ttyUSB0',
-            'frame_id': 'lidar_link',
-            'serial_baudrate': 256000,
+            'serial_port':      '/dev/ttyUSB0',
+            'frame_id':         'lidar_link',
+            'serial_baudrate':  256000,
             'angle_compensate': True,
         }]
     )
 
     # ----------------------------------------------------------------
-    # Robot state publisher - publishes TF tree from URDF
+    # Robot state publisher
     # ----------------------------------------------------------------
     robot_state_publisher = Node(
         package='robot_state_publisher',
@@ -87,14 +97,13 @@ def generate_launch_description():
         output='screen',
         parameters=[{
             'robot_description': robot_description,
-            'use_sim_time': False,
+            'use_sim_time':      False,
             'publish_frequency': 10.0,
         }]
     )
 
     # ----------------------------------------------------------------
     # Joint state publisher
-    # Publishes zero joint states so wheel positions are correct in RViz
     # ----------------------------------------------------------------
     joint_state_publisher = Node(
         package='joint_state_publisher',
@@ -106,7 +115,6 @@ def generate_launch_description():
 
     # ----------------------------------------------------------------
     # Serial bridge to Arduino
-    # Handles cmd_vel -> PWM and estop from joystick
     # ----------------------------------------------------------------
     serial_bridge = Node(
         package='ursula',
@@ -118,7 +126,6 @@ def generate_launch_description():
 
     # ----------------------------------------------------------------
     # RF2O laser odometry
-    # Generates odom->base_link transform from lidar scan matching
     # ----------------------------------------------------------------
     rf2o = Node(
         package='rf2o_laser_odometry',
@@ -126,19 +133,19 @@ def generate_launch_description():
         name='rf2o_laser_odometry_node',
         output='screen',
         parameters=[{
-            'laser_scan_topic': '/scan',
-            'odom_topic': '/odom',
-            'publish_tf': True,
-            'base_frame_id': 'base_link',
-            'odom_frame_id': 'odom',
+            'laser_scan_topic':  '/scan',
+            'odom_topic':        '/odom',
+            'publish_tf':        True,
+            'base_frame_id':     'base_link',
+            'odom_frame_id':     'odom',
             'init_pose_from_topic': '',
-            'freq': 15.0,
-            'use_sim_time': False
+            'freq':              15.0,
+            'use_sim_time':      False
         }]
     )
 
     # ----------------------------------------------------------------
-    # Twist mux - prioritises joystick over Nav2 autonomous commands
+    # Twist mux
     # ----------------------------------------------------------------
     twist_mux = Node(
         package='twist_mux',
@@ -150,40 +157,9 @@ def generate_launch_description():
     )
 
     # ----------------------------------------------------------------
-    # Foxglove bridge
-    # optional, enable with foxglove:=true to stream data to Foxglove Studio for visualisation and debugging
+    # SLAM Toolbox — MAPPING mode
+    # Uses slam_toolbox_params.yaml (the existing mapping config).
     # ----------------------------------------------------------------
-
-    foxglove_arg = DeclareLaunchArgument('foxglove', default_value='true')
-    use_foxglove = LaunchConfiguration('foxglove')
-
-    foxglove_bridge = Node(
-        condition=IfCondition(use_foxglove),
-        package='foxglove_bridge',
-        executable='foxglove_bridge',
-        name='foxglove_bridge',
-        output='screen',
-        parameters=[{
-            'port': 8765,
-            'address': '0.0.0.0',
-            'topic_whitelist': ['.*'],
-            'send_buffer_limit': 10000000,
-            'use_sim_time': False,
-            'max_qos_depth': 5,
-        }]
-    )
-    # ----------------------------------------------------------------
-    # SLAM Toolbox
-    # Generates map->odom transform and builds occupancy map
-    # ----------------------------------------------------------------
-    slam_mode_arg = DeclareLaunchArgument(
-        'slam_mode',
-        default_value='mapping',
-        description='SLAM mode: mapping or localization'
-    )
-    slam_mode = LaunchConfiguration('slam_mode')
-
-    # Use PythonExpression or a simple approach with two conditional nodes:
     slam_toolbox_mapping = Node(
         condition=LaunchConfigurationEquals('slam_mode', 'mapping'),
         package='slam_toolbox',
@@ -191,27 +167,68 @@ def generate_launch_description():
         name='slam_toolbox',
         output='screen',
         parameters=[
-            os.path.join(ursula_share, 'config', 'slam_toolbox_mapping.yaml'),
-            {'use_sim_time': False}
-        ]
-    )
-
-    slam_toolbox_localise = Node(
-        condition=LaunchConfigurationEquals('slam_mode', 'localization'),
-        package='slam_toolbox',
-        executable='async_slam_toolbox_node',  
-        name='slam_toolbox',
-        output='screen',
-        parameters=[
-            os.path.join(ursula_share, 'config', 'slam_toolbox_localisation.yaml'),
+            os.path.join(ursula_share, 'config', 'slam_toolbox_params.yaml'),
             {'use_sim_time': False}
         ]
     )
 
     # ----------------------------------------------------------------
-    # Nav2 - delayed by 5 seconds to allow SLAM to initialise first
-    # and establish the map->odom transform before Nav2 starts up.
-    # Disable with nav2:=false if you only want manual teleop.
+    # SLAM Toolbox — LOCALIZATION mode
+    # Uses slam_toolbox_localization.yaml which points at saved map.
+    # Run:  ros2 launch ursula jetson_hardware_launch.launch.py slam_mode:=localization
+    # ----------------------------------------------------------------
+    slam_toolbox_localization = Node(
+        condition=LaunchConfigurationEquals('slam_mode', 'localization'),
+        package='slam_toolbox',
+        executable='async_slam_toolbox_node',
+        name='slam_toolbox',
+        output='screen',
+        parameters=[
+            os.path.join(ursula_share, 'config', 'slam_toolbox_localization.yaml'),
+            {'use_sim_time': False}
+        ]
+    )
+
+    # ----------------------------------------------------------------
+    # Foxglove bridge
+    # Connect from Foxglove Studio: ws://<jetson-ip>:8765
+    # Over Tailscale:               ws://ursula-jetson:8765
+    # ----------------------------------------------------------------
+    foxglove_bridge = Node(
+        condition=IfCondition(use_foxglove),
+        package='foxglove_bridge',
+        executable='foxglove_bridge',
+        name='foxglove_bridge',
+        output='screen',
+        parameters=[{
+            'port':               8765,
+            'address':            '0.0.0.0',
+            'topic_whitelist':    ['.*'],
+            'send_buffer_limit':  10000000,
+            'use_sim_time':       False,
+            'max_qos_depth':      5,
+        }]
+    )
+
+    # ----------------------------------------------------------------
+    # URSULA Manager — map save/load services, status publishing
+    # ----------------------------------------------------------------
+    ursula_manager = Node(
+        package='ursula',
+        executable='ursula_manager.py',
+        name='ursula_manager',
+        output='screen',
+        parameters=[{
+            'map_save_dir': '/home/uoljetson/maps',
+            'use_sim_time': False,
+        }]
+    )
+
+    # ----------------------------------------------------------------
+    # Nav2 — delayed 5 s to allow SLAM to establish map→odom TF first.
+    # Nav2 velocity output is remapped inside nav2_launch.launch.py:
+    #   controller_server publishes to /cmd_vel_nav
+    #   twist_mux picks that up at priority 10
     # ----------------------------------------------------------------
     nav2 = TimerAction(
         period=5.0,
@@ -220,25 +237,27 @@ def generate_launch_description():
                 PythonLaunchDescriptionSource(
                     os.path.join(ursula_share, 'launch', 'nav2_launch.launch.py')
                 ),
+                # NOTE: remappings= is NOT supported on IncludeLaunchDescription.
+                # The /cmd_vel → /cmd_vel_nav remapping is handled inside
+                # nav2_launch.launch.py directly on the controller_server node.
                 launch_arguments={'use_sim_time': 'false'}.items(),
             )
         ]
     )
 
     return LaunchDescription([
-        slam_arg,
+        slam_mode_arg,
         nav2_arg,
+        foxglove_arg,
         rplidar,
         robot_state_publisher,
         joint_state_publisher,
         serial_bridge,
         rf2o,
         twist_mux,
-        #slam_toolbox,
-        slam_mode_arg,
         slam_toolbox_mapping,
-        slam_toolbox_localise,
-        foxglove_arg,
+        slam_toolbox_localization,
         foxglove_bridge,
+        ursula_manager,
         nav2,
     ])

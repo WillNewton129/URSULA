@@ -7,9 +7,11 @@ endif()
 
 find_package(ament_cmake REQUIRED)
 
-# Install Python scripts
+# Install Python scripts (each must be executable: chmod +x scripts/*.py)
 install(PROGRAMS
   scripts/serial_command_bridge.py
+  scripts/ursula_manager.py
+  scripts/detection_mapper.py
   DESTINATION lib/${PROJECT_NAME}
 )
 
@@ -21,6 +23,14 @@ install(DIRECTORY
   worlds
   rviz
   DESTINATION share/${PROJECT_NAME}
+)
+
+# Install models directory if it exists (YOLO blobs)
+# Create with: mkdir -p models && wget <blob-url> -P models/
+install(DIRECTORY
+  models
+  DESTINATION share/${PROJECT_NAME}
+  OPTIONAL   # Does not fail build if models/ doesn't exist yet
 )
 
 ament_package()
