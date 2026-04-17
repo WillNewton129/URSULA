@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<profiles xmlns="http://www.eprosima.com/XMLSchemas/fastRTPS_Profiles">
+
+  <participant profile_name="super_client_profile" is_default_profile="true">
+    <rtps>
+      <builtin>
+        <discovery_config>
+          <discoveryProtocol>SUPER_CLIENT</discoveryProtocol>
+          <discoveryServersList>
+            <RemoteServer prefix="44.53.00.5f.45.50.52.4f.53.49.4d.41">
+              <metatrafficUnicastLocatorList>
+                <locator>
+                  <udpv4>
+                    <address>100.113.154.126</address>
+                    <port>11811</port>
+                  </udpv4>
+                </locator>
+              </metatrafficUnicastLocatorList>
+            </RemoteServer>
+          </discoveryServersList>
+        </discovery_config>
+      </builtin>
+
+      <useBuiltinTransports>false</useBuiltinTransports>
+      <userTransports>
+        <transport_descriptor_id>udpv4_transport</transport_descriptor_id>
+      </userTransports>
+
+    </rtps>
+  </participant>
+
+  <transport_descriptors>
+    <transport_descriptor>
+      <transport_id>udpv4_transport</transport_id>
+      <type>UDPv4</type>
+      <interfaceWhiteList>
+        <address>100.113.154.126</address>  <!-- ursula-dev2 Tailscale IP -->
+        <address>100.124.199.113</address>  <!-- ursula-dev1 Tailscale IP -->
+        <address>100.115.207.71</address>   <!-- ursula-jetson Tailscale IP -->
+      </interfaceWhiteList>
+    </transport_descriptor>
+  </transport_descriptors>
+
+</profiles>
