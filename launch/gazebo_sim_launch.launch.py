@@ -4,19 +4,12 @@ gazebo_sim_launch.launch.py
 
 Launches the full URSULA simulation stack:
   - Gazebo Classic with the maze world
-  - robot_state_publisher (URDF → TF)
-  - joint_state_publisher (for wheel TF in RViz)
+  - robot_state_publisher (URDF -> TF)
   - Spawn the robot into Gazebo
   - slam_toolbox
+  - Nav2
+  - Foxglove bridge
   - RViz2
-
-Usage:
-  ros2 launch ursula gazebo_sim_launch.launch.py
-
-Optional args:
-  ros2 launch ursula gazebo_sim_launch.launch.py use_rviz:=false
-  ros2 launch ursula gazebo_sim_launch.launch.py slam:=false   (if you just want to drive)
-  ros2 launch ursula gazebo_sim_launch.launch.py x_spawn:=2.0 y_spawn:=-4.0
 """
 
 import os
@@ -24,18 +17,14 @@ import os
 from launch import LaunchDescription
 from launch.actions import (
     DeclareLaunchArgument,
-    ExecuteProcess,
     IncludeLaunchDescription,
     TimerAction,
 )
 from launch.conditions import IfCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
+from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
-from launch_ros.substitutions import FindPackageShare
 from ament_index_python.packages import get_package_share_directory
-from launch.actions import DeclareLaunchArgument
-from launch.conditions import IfCondition
 import xacro
 
 
@@ -46,21 +35,21 @@ def generate_launch_description():
     # ------------------------------------------------------------------ #
     # Launch arguments                                                     #
     # ------------------------------------------------------------------ #
-    use_rviz_arg    = DeclareLaunchArgument('use_rviz', default_value='true')
-    use_slam_arg    = DeclareLaunchArgument('slam',     default_value='true')
-    x_spawn_arg     = DeclareLaunchArgument('x_spawn',  default_value='0.0')
-    y_spawn_arg     = DeclareLaunchArgument('y_spawn',  default_value='-4.0')
-    yaw_spawn_arg   = DeclareLaunchArgument('yaw_spawn',default_value='0.0')
+    use_rviz_arg     = DeclareLaunchArgument('use_rviz',   default_value='true')
+    use_slam_arg     = DeclareLaunchArgument('slam',       default_value='true')
+    use_nav2_arg     = DeclareLaunchArgument('nav2',       default_value='true')
+    use_foxglove_arg = DeclareLaunchArgument('foxglove',   default_value='true')
+    x_spawn_arg      = DeclareLaunchArgument('x_spawn',    default_value='0.0')
+    y_spawn_arg      = DeclareLaunchArgument('y_spawn',    default_value='-4.0')
+    yaw_spawn_arg    = DeclareLaunchArgument('yaw_spawn',  default_value='0.0')
 
-    use_rviz  = LaunchConfiguration('use_rviz')
-    use_slam  = LaunchConfiguration('slam')
-    x_spawn   = LaunchConfiguration('x_spawn')
-    y_spawn   = LaunchConfiguration('y_spawn')
-    yaw_spawn = LaunchConfiguration('yaw_spawn')
-
-    use_foxglove_arg = DeclareLaunchArgument('foxglove', default_value='true')
+    use_rviz     = LaunchConfiguration('use_rviz')
+    use_slam     = LaunchConfiguration('slam')
+    use_nav2     = LaunchConfiguration('nav2')
     use_foxglove = LaunchConfiguration('foxglove')
-
+    x_spawn      = LaunchConfiguration('x_spawn')
+    y_spawn      = LaunchConfiguration('y_spawn')
+    yaw_spawn    = LaunchConfiguration('yaw_spawn')
 
     # ------------------------------------------------------------------ #
     # Process URDF / xacro                                                #
@@ -91,63 +80,55 @@ def generate_launch_description():
         executable='robot_state_publisher',
         name='robot_state_publisher',
         output='screen',
-        parameters=[{'robot_description': robot_description_raw,
-                     'use_sim_time': True}]
+        parameters=[{
+            'robot_description': robot_description_raw,
+            'use_sim_time': True,
+        }]
     )
 
     # ------------------------------------------------------------------ #
-    # Joint State Publisher                                                #
-    # Publishes zero positions for fixed joints so RViz doesn't complain  #
+    # Static TF for suspension/wheel links not driven by diff drive plugin #
     # ------------------------------------------------------------------ #
-    # joint_state_publisher = Node(
-    #     package='joint_state_publisher',
-    #     executable='joint_state_publisher',
-    #     name='joint_state_publisher',
-    #     parameters=[{'use_sim_time': True}]
-    # )
-    # Static transforms for front wheels (not controlled by diff drive plugin)
     front_left_wheel_tf = Node(
         package='tf2_ros',
         executable='static_transform_publisher',
         name='front_left_wheel_tf',
         arguments=['0', '0', '0', '0', '0', '0',
-                'chassis_link', 'front_left_wheel_link'],
+                   'chassis_link', 'front_left_wheel_link'],
         parameters=[{'use_sim_time': True}]
     )
-
     front_right_wheel_tf = Node(
         package='tf2_ros',
         executable='static_transform_publisher',
         name='front_right_wheel_tf',
         arguments=['0', '0', '0', '0', '0', '0',
-                'chassis_link', 'front_right_wheel_link'],
+                   'chassis_link', 'front_right_wheel_link'],
         parameters=[{'use_sim_time': True}]
     )
-
     front_left_susp_tf = Node(
-    package='tf2_ros',
-    executable='static_transform_publisher',
-    name='front_left_susp_tf',
-    arguments=['0', '0', '0', '0', '0', '0',
-               'chassis_link', 'front_left_susp_rod_link'],
-    parameters=[{'use_sim_time': True}]
+        package='tf2_ros',
+        executable='static_transform_publisher',
+        name='front_left_susp_tf',
+        arguments=['0', '0', '0', '0', '0', '0',
+                   'chassis_link', 'front_left_susp_rod_link'],
+        parameters=[{'use_sim_time': True}]
     )
-
     front_right_susp_tf = Node(
         package='tf2_ros',
         executable='static_transform_publisher',
         name='front_right_susp_tf',
         arguments=['0', '0', '0', '0', '0', '0',
-                'chassis_link', 'front_right_susp_rod_link'],
+                   'chassis_link', 'front_right_susp_rod_link'],
         parameters=[{'use_sim_time': True}]
     )
 
     # ------------------------------------------------------------------ #
     # Spawn robot in Gazebo                                                #
-    # Small delay gives Gazebo time to finish loading the world            #
+    # Increased delay to 8s — gives Gazebo time to fully load the world   #
+    # and robot_state_publisher time to latch robot_description.          #
     # ------------------------------------------------------------------ #
     spawn_entity = TimerAction(
-        period=3.0,
+        period=8.0,
         actions=[
             Node(
                 package='gazebo_ros',
@@ -159,7 +140,7 @@ def generate_launch_description():
                     '-entity', 'ursula',
                     '-x', x_spawn,
                     '-y', y_spawn,
-                    '-z', '0.12',   # Slight lift so wheels land cleanly
+                    '-z', '0.12',
                     '-Y', yaw_spawn,
                 ]
             )
@@ -180,26 +161,40 @@ def generate_launch_description():
             {'use_sim_time': True}
         ]
     )
+
     # ------------------------------------------------------------------ #
-    # Foxglove                                                           #
+    # Nav2 — delayed 15s to allow SLAM to establish map->odom TF first    #
+    # ------------------------------------------------------------------ #
+    nav2 = TimerAction(
+        period=15.0,
+        actions=[
+            IncludeLaunchDescription(
+                condition=IfCondition(use_nav2),
+                launch_description_source=PythonLaunchDescriptionSource(
+                    os.path.join(ursula_share, 'launch', 'nav2_launch.launch.py')
+                ),
+                launch_arguments={'use_sim_time': 'true'}.items(),
+            )
+        ]
+    )
+
+    # ------------------------------------------------------------------ #
+    # Foxglove bridge                                                      #
     # ------------------------------------------------------------------ #
     foxglove_bridge = Node(
-    condition=IfCondition(use_foxglove),
-    package='foxglove_bridge',
-    executable='foxglove_bridge',
-    name='foxglove_bridge',
-    output='screen',
-    parameters=[{
-        'port': 8765,
-        'address': '0.0.0.0',  # Listen on all interfaces
-        'tls': False,
-        'certfile': '',
-        'keyfile': '',
-        'topic_whitelist': ['.*'],  # Allow all topics
-        'send_buffer_limit': 10000000,
-        'use_sim_time': True,
-    }]
-)
+        condition=IfCondition(use_foxglove),
+        package='foxglove_bridge',
+        executable='foxglove_bridge',
+        name='foxglove_bridge',
+        output='screen',
+        parameters=[{
+            'port': 8765,
+            'address': '0.0.0.0',
+            'topic_whitelist': ['.*'],
+            'send_buffer_limit': 10000000,
+            'use_sim_time': True,
+        }]
+    )
 
     # ------------------------------------------------------------------ #
     # RViz2                                                                #
@@ -217,19 +212,20 @@ def generate_launch_description():
     return LaunchDescription([
         use_rviz_arg,
         use_slam_arg,
+        use_nav2_arg,
+        use_foxglove_arg,
         x_spawn_arg,
         y_spawn_arg,
         yaw_spawn_arg,
         gazebo,
         robot_state_publisher,
-        #joint_state_publisher,
         front_left_wheel_tf,
         front_right_wheel_tf,
         front_left_susp_tf,
         front_right_susp_tf,
         spawn_entity,
         slam_toolbox,
-        use_foxglove_arg,
+        nav2,
         foxglove_bridge,
         rviz,
     ])
