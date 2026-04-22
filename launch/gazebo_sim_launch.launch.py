@@ -6,10 +6,22 @@ Launches the full URSULA simulation stack:
   - Gazebo Classic with the maze world
   - robot_state_publisher (URDF -> TF)
   - Spawn the robot into Gazebo
+  - twist_mux  (ADDED - was missing, causing /cmd_vel_joy to be ignored)
   - slam_toolbox
   - Nav2
   - Foxglove bridge
   - RViz2
+
+FIX LOG (vs previous version):
+  1. Added twist_mux node — without it /cmd_vel_joy never reached /cmd_vel.
+  2. Removed the four static_transform_publisher nodes for wheel/susp links.
+     Those were publishing zero-offset transforms that conflicted with the
+     diff drive plugin's own wheel TF and with robot_state_publisher.
+     robot_state_publisher + joint_state_publisher already handle all fixed
+     joints in the URDF; no static TF overrides are needed.
+  3. sim_teleop_launch.launch.py publishes joystick to /cmd_vel_joy
+     (remapping added there). twist_mux then forwards the highest-priority
+     active source to /cmd_vel which Gazebo's diff drive plugin reads.
 """
 
 import os
@@ -87,38 +99,18 @@ def generate_launch_description():
     )
 
     # ------------------------------------------------------------------ #
-    # Static TF for suspension/wheel links not driven by diff drive plugin #
+    # Joint State Publisher                                                #
+    # Publishes zero positions for joints the diff drive plugin doesn't   #
+    # drive (suspension rods, front wheels). Without this, RViz shows     #
+    # "no transform" warnings for those links.                            #
+    # NOTE: joint_state_publisher and the Gazebo diff drive plugin both   #
+    # publish /joint_states — they will merge. The plugin's values for    #
+    # rear_left/right will override JSP's zeros for those joints.         #
     # ------------------------------------------------------------------ #
-    front_left_wheel_tf = Node(
-        package='tf2_ros',
-        executable='static_transform_publisher',
-        name='front_left_wheel_tf',
-        arguments=['0', '0', '0', '0', '0', '0',
-                   'chassis_link', 'front_left_wheel_link'],
-        parameters=[{'use_sim_time': True}]
-    )
-    front_right_wheel_tf = Node(
-        package='tf2_ros',
-        executable='static_transform_publisher',
-        name='front_right_wheel_tf',
-        arguments=['0', '0', '0', '0', '0', '0',
-                   'chassis_link', 'front_right_wheel_link'],
-        parameters=[{'use_sim_time': True}]
-    )
-    front_left_susp_tf = Node(
-        package='tf2_ros',
-        executable='static_transform_publisher',
-        name='front_left_susp_tf',
-        arguments=['0', '0', '0', '0', '0', '0',
-                   'chassis_link', 'front_left_susp_rod_link'],
-        parameters=[{'use_sim_time': True}]
-    )
-    front_right_susp_tf = Node(
-        package='tf2_ros',
-        executable='static_transform_publisher',
-        name='front_right_susp_tf',
-        arguments=['0', '0', '0', '0', '0', '0',
-                   'chassis_link', 'front_right_susp_rod_link'],
+    joint_state_publisher = Node(
+        package='joint_state_publisher',
+        executable='joint_state_publisher',
+        name='joint_state_publisher',
         parameters=[{'use_sim_time': True}]
     )
 
@@ -145,6 +137,23 @@ def generate_launch_description():
                 ]
             )
         ]
+    )
+
+    # ------------------------------------------------------------------ #
+    # Twist Mux  (FIX: was missing from sim launch)                       #
+    #                                                                      #
+    # Priority chain:                                                      #
+    #   /cmd_vel_joy  (100) — joystick, from sim_teleop_launch            #
+    #   /cmd_vel_nav  (10)  — Nav2, from nav2_launch                      #
+    # Output: /cmd_vel — read by Gazebo diff drive plugin                 #
+    # ------------------------------------------------------------------ #
+    twist_mux = Node(
+        package='twist_mux',
+        executable='twist_mux',
+        name='twist_mux',
+        output='screen',
+        parameters=[os.path.join(ursula_share, 'config', 'twist_mux.yaml')],
+        remappings=[('/cmd_vel_out', '/cmd_vel')]
     )
 
     # ------------------------------------------------------------------ #
@@ -219,11 +228,9 @@ def generate_launch_description():
         yaw_spawn_arg,
         gazebo,
         robot_state_publisher,
-        front_left_wheel_tf,
-        front_right_wheel_tf,
-        front_left_susp_tf,
-        front_right_susp_tf,
+        joint_state_publisher,
         spawn_entity,
+        twist_mux,          # FIX: added
         slam_toolbox,
         nav2,
         foxglove_bridge,

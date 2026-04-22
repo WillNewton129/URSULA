@@ -1,51 +1,52 @@
 teleop_twist_joy_node:
   ros__parameters:
-    # Require enable button to publish (hold RB)
+    # Hold RB (button 5) to enable movement — deadman switch
     require_enable_button: true
-    enable_button: 5           # RB (hold to enable movement)
-    enable_turbo_button: -1    # Disable turbo (we'll use button 4 for estop)
+    enable_button: 5           # RB
+    enable_turbo_button: -1    # Disabled — button 4 reserved for estop
 
-    #need to re-enable turbo!!!!!
-    
-    # Deadzone for joystick axes to prevent drift
+    # Deadzone prevents joystick drift
     deadzone: 0.1
-    
-    # Linear axis mapping (x = forward/back, y = left/right, z = up/down)
+
+    # Linear axis: left stick vertical
     axis_linear:
-      x: 1     # left stick vertical -> axes[1]
+      x: 1      # axes[1] = left stick vertical
       y: -1
       z: -1
-    
-    # Scales for normal speed (tune to your motors)
+
+    # Normal speed — conservative for sim testing
+    # Raise scale_linear.x toward 0.5 once steering is confirmed working
     scale_linear:
-      x: 0.6    # forward/backward speed
+      x: 0.3    # m/s forward/backward
       y: 0.0
       z: 0.0
-    
-    # Turbo disabled (set to same as normal)
+
+    # Turbo (enable_turbo_button = -1 so this is never triggered,
+    # but values must be sane in case turbo is re-enabled later)
     scale_linear_turbo:
-      x: 0.050
+      x: 0.6
       y: 0.0
       z: 0.0
-    
-    # Angular axis mapping (yaw = rotation)
+
+    # Angular axis: right stick horizontal
+    # PS4: axes[3]   F310: axes[0]
+    # Set to 3 for PS4. Change to 0 if using F310 in sim.
     axis_angular:
-      yaw: 3     # right stick horizontal -> axes[0]
+      yaw: 3
       pitch: -1
       roll: -1
-    
-    # Angular scaling
+
+    # Angular scaling — 0.5 rad/s gives visible turns in sim
     scale_angular:
-      yaw: 1.0   # rotation speed
+      yaw: 0.5
       pitch: 0.0
       roll: 0.0
-    
+
     scale_angular_turbo:
-      yaw: 0.10
+      yaw: 1.0
       pitch: 0.0
       roll: 0.0
-    
-    # Misc options
+
     inverted_reverse: false
     publish_stamped_twist: false
     frame: "teleop_twist_joy"

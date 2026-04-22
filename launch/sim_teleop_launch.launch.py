@@ -5,29 +5,26 @@ sim_teleop_launch.launch.py
 Lightweight teleop launcher for simulation.
 Run this in a SEPARATE terminal alongside gazebo_sim_launch.
 
-Provides TWO teleop options selected via launch arg:
+FIX LOG:
+  - teleop_twist_joy now remaps /cmd_vel -> /cmd_vel_joy so twist_mux
+    (running in gazebo_sim_launch) picks it up at priority 100.
+    Previously it published directly to /cmd_vel, bypassing twist_mux
+    entirely. This meant Gazebo received joystick commands fine in
+    isolation, but broke as soon as Nav2 was also publishing to /cmd_vel.
+    With the mux in place, joystick always wins over Nav2.
 
-  ros2 launch ursula sim_teleop_launch.launch.py teleop:=keyboard
-    → Use keyboard (WASD / arrow keys). Good for precise steering tests.
+Usage:
+  Terminal 1 (sim):     ros2 launch ursula gazebo_sim_launch.launch.py
+  Terminal 2 (teleop):  ros2 launch ursula sim_teleop_launch.launch.py
 
-  ros2 launch ursula sim_teleop_launch.launch.py teleop:=joystick
-    → Use the F310 gamepad (same config as real robot).
-
-Keyboard controls (teleop_twist_keyboard):
-  i / , = forward / backward
-  j / l = turn left / right
-  u / o = forward-left / forward-right diagonal (key for steering-while-moving test!)
-  k     = stop
-  q / z = increase / decrease all speeds
-  w / x = increase / decrease linear speed only
-  e / c = increase / decrease angular speed only
+Controls (PS4 / F310 — hold RB to enable):
+  Left stick up/down  — forward/backward
+  Right stick L/R     — turn left/right
+  LB (button 4)       — emergency stop
 """
 
 import os
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument
-from launch.conditions import IfCondition, UnlessCondition
-from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 from ament_index_python.packages import get_package_share_directory
 
@@ -36,52 +33,32 @@ def generate_launch_description():
 
     ursula_share = get_package_share_directory('ursula')
 
-    teleop_type_arg = DeclareLaunchArgument(
-        'teleop',
-        default_value='joystick',
-        description='Teleop type: keyboard or joystick'
-    )
-    teleop_type = LaunchConfiguration('teleop')
-
-    # Keyboard teleop
-    # keyboard_teleop = Node(
-    #     condition=IfCondition(
-    #         # Hack: LaunchConfiguration doesn't support == directly,
-    #         # but teleop_twist_keyboard is always fine to run — the arg is just a hint.
-    #         # See note below about running this manually if needed.
-    #         teleop_type
-    #     ),
-    #     package='teleop_twist_keyboard',
-    #     executable='teleop_twist_keyboard',
-    #     name='teleop_twist_keyboard',
-    #     output='screen',
-    #     prefix='xterm -e',   # Opens in its own terminal window so stdin works
-    #     parameters=[{'use_sim_time': True}],
-    #     remappings=[('/cmd_vel', '/cmd_vel')]
-    # )
-
-    # Joystick nodes
+    # Joystick driver
     joy_node = Node(
         package='joy',
         executable='joy_node',
         name='joy_node',
-        parameters=[{'use_sim_time': True}]
+        parameters=[{
+            'use_sim_time': True,
+            'device_id': 0,
+        }]
     )
 
+    # Teleop — publishes to /cmd_vel_joy (FIX: was publishing to /cmd_vel directly)
+    # twist_mux in gazebo_sim_launch forwards /cmd_vel_joy -> /cmd_vel at priority 100
     joystick_teleop = Node(
         package='teleop_twist_joy',
         executable='teleop_node',
         name='teleop_twist_joy_node',
         output='screen',
+        remappings=[('/cmd_vel', '/cmd_vel_joy')],   # FIX: remapping added
         parameters=[
             os.path.join(ursula_share, 'config', 'controller_teleop.yaml'),
-            {'use_sim_time': True}
+            {'use_sim_time': True},
         ]
     )
 
     return LaunchDescription([
-        teleop_type_arg,
-        #keyboard_teleop,
         joy_node,
         joystick_teleop,
     ])
