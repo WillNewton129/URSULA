@@ -17,7 +17,7 @@ teleop_twist_joy_node:
     # Normal speed — conservative for sim testing
     # Raise scale_linear.x toward 0.5 once steering is confirmed working
     scale_linear:
-      x: 0.3    # m/s forward/backward
+      x: 0.6    # m/s forward/backward
       y: 0.0
       z: 0.0
 
