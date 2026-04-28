@@ -19,26 +19,26 @@
             </RemoteServer>
           </discoveryServersList>
         </discovery_config>
+
+        <metatrafficUnicastLocatorList>
+          <locator>
+            <udpv4>
+              <address>100.113.154.126</address>
+            </udpv4>
+          </locator>
+        </metatrafficUnicastLocatorList>
+
+        <initialPeersList>
+          <locator>
+            <udpv4>
+              <address>100.113.154.126</address>
+              <port>11811</port>
+            </udpv4>
+          </locator>
+        </initialPeersList>
+
       </builtin>
-
-      <useBuiltinTransports>false</useBuiltinTransports>
-      <userTransports>
-        <transport_descriptor_id>tailscale_udp</transport_descriptor_id>
-      </userTransports>
-
     </rtps>
   </participant>
-
-  <transport_descriptors>
-    <transport_descriptor>
-      <transport_id>tailscale_udp</transport_id>
-      <type>UDPv4</type>
-      <interfaceWhiteList>
-        <address>100.113.154.126</address>
-        <address>100.124.199.113</address>
-        <address>100.115.207.71</address>
-      </interfaceWhiteList>
-    </transport_descriptor>
-  </transport_descriptors>
 
 </profiles>
