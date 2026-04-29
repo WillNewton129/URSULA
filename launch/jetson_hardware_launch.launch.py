@@ -232,7 +232,7 @@ def generate_launch_description():
     #   twist_mux picks that up at priority 10
     # ----------------------------------------------------------------
     nav2 = TimerAction(
-        period=5.0,
+        period=10.0,
         actions=[
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(
