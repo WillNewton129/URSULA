@@ -12,6 +12,7 @@ install(PROGRAMS
   scripts/serial_command_bridge.py
   scripts/ursula_manager.py
   scripts/detection_mapper.py
+  scripts/detection_visualiser.py
   DESTINATION lib/${PROJECT_NAME}
 )
 

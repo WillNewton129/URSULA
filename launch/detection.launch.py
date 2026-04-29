@@ -37,8 +37,8 @@ def generate_launch_description():
 
     # Detection visualiser node (publishes RViz2 markers)
     visualiser_node = launch_ros.actions.Node(
-        package='my_robot_bringup',
-        executable='detection_visualiser',
+        package='ursula',
+        executable='detection_visualiser.py',
         name='detection_visualiser',
         output='screen',
     )

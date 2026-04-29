@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import rclpy
 from rclpy.node import Node
 from depthai_ros_msgs.msg import TrackDetection2DArray
@@ -204,10 +205,10 @@ class DetectionVisualiser(Node):
         except Exception as e:
             self.get_logger().error(f'publish error: {e}')
 
-        cv2.namedWindow("Object Tracking", cv2.WINDOW_NORMAL)
-        cv2.resizeWindow("Object Tracking", 1280, 800)
-        cv2.imshow("Object Tracking", frame)
-        cv2.waitKey(1)
+       # cv2.namedWindow("Object Tracking", cv2.WINDOW_NORMAL)
+       # cv2.resizeWindow("Object Tracking", 1280, 800)
+       # cv2.imshow("Object Tracking", frame)
+       # cv2.waitKey(1)
 
 
 def main(args=None):
