@@ -27,8 +27,9 @@ def generate_launch_description():
         parameters=[{
     'tf_prefix': 'oak',
     'monoResolution': monoResolution,
-    'resourceBaseFolder': '/home/uoljetson/oak_camera_ws/src/depthai-ros/depthai_examples/resources',
+   'resourceBaseFolder': default_resources_path,
     'nnName': 'yolov4_tiny_coco_416x416_openvino_2021.4_6shave_bgr.blob',
+    'confidenceThreshold': 0.30,
     'sync_nn': True,
     'fullFrameTracking': False,
 }]
