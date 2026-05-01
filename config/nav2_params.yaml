@@ -69,20 +69,20 @@ controller_server:
     min_x_velocity_threshold: 0.001
     min_y_velocity_threshold: 0.05
     min_theta_velocity_threshold: 0.001
-    failure_tolerance: 0.8
+    failure_tolerance: 1.0
     progress_checker_plugins: ["progress_checker"]
     goal_checker_plugins: ["goal_checker"]
     controller_plugins: ["FollowPath"]
 
     progress_checker:
       plugin: "nav2_controller::SimpleProgressChecker"
-      required_movement_radius: 0.1
-      movement_time_allowance: 15.0
+      required_movement_radius: 0.08
+      movement_time_allowance: 20.0
 
     goal_checker:
       plugin: "nav2_controller::SimpleGoalChecker"
       xy_goal_tolerance: 0.25
-      yaw_goal_tolerance: 0.35
+      yaw_goal_tolerance: 0.40
       stateful: true
 
     FollowPath:
@@ -97,7 +97,7 @@ controller_server:
 
       # rotate_to_heading sends PURE angular velocity (linear=0).
       # Keep this low: at 0.30 rad/s, wheel PWM differential ≈ 96/255.
-      rotate_to_heading_angular_vel: 0.1
+      rotate_to_heading_angular_vel: 0.16
 
       transform_tolerance: 0.1
       use_velocity_scaled_lookahead_dist: false
@@ -112,7 +112,7 @@ controller_server:
 
       use_rotate_to_heading: true
       rotate_to_heading_min_angle: 0.35   # ~45 deg before committing to forward motion
-      max_angular_accel: 0.3            # Reduced from 1.0 — gentler acceleration
+      max_angular_accel: 0.45           # Reduced from 1.0 — gentler acceleration
       allow_reversing: false
 
 planner_server:
@@ -139,10 +139,10 @@ behavior_server:
     global_frame: odom
     robot_base_frame: base_link
     transform_tolerance: 0.1
-    simulate_ahead_time: 2.0
-    max_rotational_vel: 0.1            # Matches rotate_to_heading_angular_vel
-    min_rotational_vel: 0.06
-    rotational_acc_lim: 0.25
+    simulate_ahead_time: 1.0
+    max_rotational_vel: 0.14            # Matches rotate_to_heading_angular_vel
+    min_rotational_vel: 0.08
+    rotational_acc_lim: 0.230
 
 local_costmap:
   local_costmap:
