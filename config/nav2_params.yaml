@@ -89,7 +89,7 @@ controller_server:
       plugin: "nav2_regulated_pure_pursuit_controller::RegulatedPurePursuitController"
 
       # ── Speeds (tuned for safe operation on real hardware) ──────────────
-      desired_linear_vel: 0.03          # 10 cm/s — conservative for indoors
+      desired_linear_vel: 0.05          # 10 cm/s — conservative for indoors
       lookahead_dist: 0.35
       min_lookahead_dist: 0.25
       max_lookahead_dist: 0.55
