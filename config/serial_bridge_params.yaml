@@ -1,20 +1,9 @@
-serial_cmd_bridge:
+/**:
   ros__parameters:
-    serial_port: "/dev/ttyACM0"     # Arduino Uno serial port
+    serial_port: "/dev/ttyACM0"
     baud_rate: 115200
-    wheel_base: 0.56                # 560mm chassis width
-    estop_button: 4                 # LB button (button index 4)
-    turn_multiplier: 4.5            # Angular amplification for skid-steer
-
-    # ── Safety velocity caps ────────────────────────────────────────────
-    # Applied BEFORE kinematic conversion.  Prevents any cmd_vel source
-    # (Nav2, teleop) from ever commanding dangerously high wheel speeds.
-    #
-    # With these values and turn_multiplier=4.5, wheel_base=0.56:
-    #   max possible wheel vel = 0.3 + (0.5 * 4.5 * 0.28) = 0.93 m/s
-    #   max PWM = 0.93 * 255 ≈ 237  (safe, below 255)
-    #
-    # To allow faster autonomous navigation, raise max_linear_vel in
-    # small steps (0.05 m/s at a time) and test in open space first.
-    max_linear_vel: 0.01             # m/s  — absolute max forward/back speed
-    max_angular_vel: 0.08            # rad/s — absolute max rotation rate
+    wheel_base: 0.56
+    estop_button: 4
+    turn_multiplier: 4.5
+    max_linear_vel: 0.08
+    max_angular_vel: 0.08
