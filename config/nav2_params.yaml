@@ -97,7 +97,7 @@ controller_server:
 
       # rotate_to_heading sends PURE angular velocity (linear=0).
       # Keep this low: at 0.30 rad/s, wheel PWM differential ≈ 96/255.
-      rotate_to_heading_angular_vel: 0.5
+      rotate_to_heading_angular_vel: 0.07
 
       transform_tolerance: 0.1
       use_velocity_scaled_lookahead_dist: false
@@ -111,8 +111,8 @@ controller_server:
       regulated_linear_scaling_min_speed: 0.05
 
       use_rotate_to_heading: true
-      rotate_to_heading_min_angle: 0.35   # ~45 deg before committing to forward motion
-      max_angular_accel: 0.45           # Reduced from 1.0 — gentler acceleration
+      rotate_to_heading_min_angle: 0.12   # ~45 deg before committing to forward motion
+      max_angular_accel: 0.8           # Reduced from 1.0 — gentler acceleration
       allow_reversing: false
 
 planner_server:
